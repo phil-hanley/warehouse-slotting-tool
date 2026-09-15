@@ -17,7 +17,7 @@ To provide a complete and insightful view of warehouse sales activity, I develop
 
 The **Article Picking Analysis** page provides the picking activity of every warehouse article. Users can filter articles by location type (floor or shelf), aisle, product area, product division, pallet size, and a range of dates to identify both high and low-demand articles throughout the warehouse.
 
-(Dates have been erased from the date slicer to protect historical sales data)
+*(Dates have been erased from the date slicer to protect historical sales data)*
 
 ## PALLET article performance
 
@@ -38,3 +38,37 @@ Each heat map cell also includes a custom tooltip that provides additional detai
 <img width="765" height="727" alt="image" src="https://github.com/user-attachments/assets/8b247bde-2d3e-4531-ba51-442cea5e97fc" />
 
 In the example above, we see that there are two articles located in Aisle 30, Bin 65. These two articles combine for a total of 162 picks during a set time period.
+
+## Data Ingestion
+
+This dashboard pulls data from three separate reports that provide information about the articles, such as picking/sales history, article name, article number, and assigned location in the warehouse. These reports are stored as Excel files in SharePoint which are set to auto export every day to their SharePoint folders, replacing the file from the previous day and allowing the Power BI to ingest the updated data every morning. Power BI connects to these SharePoint folders as its data sources, allowing the semantic model to receive the updated data.
+
+*(Historical sales data, forecasting, and data source table names have been redacted for data privacy reasons)*
+
+### Source Data
+
+The three reports mentioned above are briefly described below. For confidentiality, the internal report names have been replaced with descriptive names throughout this project.
+
+| Source | Purpose |
+| --- | --- |
+| **Article Dimensions** | Provides article dimensions and other physical product attributes used for pallet-size classification. |
+| **Sales Space Optimization** | Provides current article and warehouse-location information used to identify where articles are stored. |
+| **Picking Reports** | Historical order-picking data used to calculate article demand and picking activity by warehouse location. |
+
+## Data Transformation
+
+Before building the data model, I used Power Query to clean up and standardize the source data. Just as I did in the **warehouse-location-optimization** repository, I needed to ensure consistent formatting for article numbers and location IDs.
+
+Our article numbers use eight-digit numerical identifiers. Both of my source reports omitted leading zeros for this identifier, so I used `Text.PadStart` to fix this.
+
+```DAX
+= Table.AddColumn(Table1_Table, "ARTNO_fixed", each Text.PadStart(Text.From([ARTNO]), 8, "0"))
+```
+
+Then, because of how the **Picking Reports** data is retrieved, the report can sometimes generate duplicate rows. To find these duplicate rows, I used the **Remove Duplicates** function in Power Query based on specific values in each row that can identify a unique picking record.
+
+```DAX
+= Table.Distinct(#"Changed Type", {"Order No", "Order Type", "Article No", "Pick Area", "User Picking"})
+```
+
+
