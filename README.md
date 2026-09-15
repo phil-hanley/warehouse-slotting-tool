@@ -59,7 +59,7 @@ The three reports mentioned above are briefly described below. For confidentiali
 
 Before building the data model, I used Power Query to clean up and standardize the source data. Just as I did in the **warehouse-location-optimization** repository, I needed to ensure consistent formatting for article numbers and location IDs.
 
-Our article numbers use eight-digit numerical identifiers. Both of my source reports omitted leading zeros for this identifier, so I used `Text.PadStart` to fix this.
+Our article numbers use eight-digit numerical identifiers. Some of my source reports omitted leading zeros for this identifier, so I used `Text.PadStart` to fix this.
 
 ```DAX
 = Table.AddColumn(Table1_Table, "ARTNO_fixed", each Text.PadStart(Text.From([ARTNO]), 8, "0"))
@@ -71,4 +71,23 @@ Then, because of how the **Picking Reports** data is retrieved, the report can s
 = Table.Distinct(#"Changed Type", {"Order No", "Order Type", "Article No", "Pick Area", "User Picking"})
 ```
 
+## Data Modeling
 
+After cleaning and standardizing the data, I was able to create relationships between each table. Below is the model view of the Power BI that displays the relationships of each table:
+
+<img width="1567" height="1004" alt="bin planning tool relationship model " src="https://github.com/user-attachments/assets/95982212-8543-4530-bc00-d294f26e5a98" />
+
+| Side One                    | Relationship Key                 | Side Two                       | Cardinality       |
+| --------------------------- | -------------------              | --------------------------     | ----------------- |
+| **SM2 Articles**            | `ArticleNo`                      | **Sales Space Optimization**   | One-to-Many (1:*) |
+| **SM2 Articles**            | `ArticleNo`                      | **Picking Reports**            | One-to-Many (1:*) |
+| **Calendar**                | `Date` ↔ `Date Orderline Picked` | **Picking Reports**            | One-to-Many (1:*) |
+| **Full Serve Locations**    | `SLID`                           | **Picking Reports**            | One-to-Many (1:*) |
+| **Full Serve Locations**    | `SLID`                           | **Sales Space Optimization**   | One-to-Many (1:*) |
+| **SM2 Articles**            | `ArticleNo`                      | **Article Dimensions**         | One-to-One (1:1)  |
+
+The **SM2 Articles** table serves as the primary article-level table in the model. It connects each unique article to the **Picking Reports**, **Sales Space Optimization**, and **Article Dimensions** tables. These relationships allow article details like location information, physical pallet dimensions, and historical picking activity to be analyzed together.
+
+The **Full Serve Locations** table contains one row for each warehouse location and connects to both **Sales Space Optimization** and **Picking Reports** through the `SLID` field, allowing updated warehouse location information to be compared with the picking data to provide the aisle and bin numbers used to build the **Picking Heat Map** tab.
+
+Finally, a **Calendar** table connects to the **Picking Reports** table using the date each article was picked, allowing picking data to be filtered and analyzed across any specific range of dates.
