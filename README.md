@@ -23,7 +23,7 @@ The **Article Picking Analysis** page provides the picking activity of every war
 
 <img width="1672" height="941" alt="pallet picking analysis" src="https://github.com/user-attachments/assets/01ad767c-3ba4-4c6e-b6d9-c3aafce0c296" />
 
-(For reference, a **PALLET** article is an article that lives in elevated racking and does not have a home location on our warehouse floor)
+*(For reference, a **PALLET** article is an article that lives in elevated racking and does not have a home location on our warehouse floor)*
 
 The **PALLET Article Performance** page helps us identify which articles stored in elevated racking are picked most frequently. This tool can be used alongside the **Article Picking Analysis** page to identify articles stored on our floor with low picking demand, as these are the strongest candidates for a location swap. By relocating high-demand articles to the floor and low-demand articles to the elevated racking, we make frequently picked articles more accessible to our coworkers, reducing unnecessary forklift use and improving our overall picking efficiency.
 
