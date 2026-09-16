@@ -2,7 +2,7 @@
 Power BI dashboard for analyzing picking activity and sales history in the warehouse to support optimized inventory planning decisions
 
 ## Business Problem
-When planning our warehouse floor, we must balance high and low-demand articles in an efficient way. This means high-demand articles should be as accessible as possible, while low-demand articles should be given low-priority locations. Given that our warehouse has thousands of articles and only a fraction of floor and shelf slots to fit these, we must be careful about the way we plan our warehouse articles. 
+When planning our warehouse floor, we must balance high and low-demand articles in an efficient way. This means high-demand articles should be as accessible as possible, while low-demand articles should be given low-priority locations. Given that our warehouse has thousands of articles and only a fraction of floor and shelf slots to accommodate them, we must be careful about the way we plan our warehouse articles. 
 
 Our historical sales and order picking data are difficult to analyze in their raw form. When we are making inventory planning decisions, we typically find ourselves digging through multiple raw reports and planning without a complete view of warehouse activity. There is no simple way for us to compare the performance of every article or to see which articles have locations that may not fit their level of demand.
 
@@ -27,7 +27,7 @@ The **Article Picking Analysis** page provides the picking activity of every war
 
 The **PALLET Article Performance** page helps us identify which articles stored in elevated racking are picked most frequently. This tool can be used alongside the **Article Picking Analysis** page to identify articles stored on our floor with low picking demand, as these are the strongest candidates for a location swap. By relocating high-demand articles to the floor and low-demand articles to the elevated racking, we make frequently picked articles more accessible to our coworkers, reducing unnecessary forklift use and improving our overall picking efficiency.
 
-The vertical bar graph in the top right allows us to view pallet picks week-over-week to determine if PALLET picking demand is consistent over time or concentrated within certain weeks. The horizontal bar graph on the bottom right displays the top 10 PALLET articles by pick count, allowing us to quickly identify which articles are generating the most PALLET picks.
+The vertical bar graph in the top right allows us to view PALLET picks week-over-week to determine if PALLET picking demand is consistent over time or concentrated within certain weeks. The horizontal bar graph on the bottom right displays the top 10 PALLET articles by pick count, allowing us to quickly identify which articles are generating the most PALLET picks.
 
 ## Picking Heat Map and Tooltip
 
@@ -43,7 +43,7 @@ In the example above, we see that there are two articles located in Aisle 30, Bi
 
 ## Data Ingestion
 
-This dashboard pulls data from three separate reports that provide information about the articles, such as picking/sales history, article name, article number, and assigned location in the warehouse. These reports are stored as Excel files in SharePoint which are set to auto export every day to their SharePoint folders, replacing the file from the previous day and allowing the Power BI to ingest the updated data every morning. Power BI connects to these SharePoint folders as its data sources, allowing the semantic model to receive the updated data.
+This dashboard pulls data from three separate reports that provide information about the articles, such as picking/sales history, article name, article number, and assigned location in the warehouse. These reports are automatically exported as Excel files to SharePoint each day, replacing the previous day's files. Power BI connects to these folders and receives the updated data each morning. Power BI connects to these SharePoint folders as its data sources, allowing the semantic model to receive the updated data.
 
 *(Historical sales data, forecasting, and data source table names have been redacted for data privacy reasons)*
 
@@ -90,7 +90,7 @@ After cleaning and standardizing the data, I was able to create relationships be
 
 The **SM2 Articles** table serves as the primary article-level table in the model. It connects each unique article to the **Picking Reports**, **Sales Space Optimization**, and **Article Dimensions** tables. These relationships allow article details like location information, physical pallet dimensions, and historical picking activity to be analyzed together.
 
-The **Full Serve Locations** table contains one row for each warehouse location and connects to both **Sales Space Optimization** and **Picking Reports** through the `SLID` field, allowing updated warehouse location information to be compared with the picking data to provide the aisle and bin numbers used to build the **Picking Heat Map** tab.
+The **Full Serve Locations** table contains one row for each warehouse location and connects to both **Sales Space Optimization** and **Picking Reports** through the `SLID` field. This allows updated warehouse location information to be compared with the picking data and provides the aisle and bin numbers used to build the **Picking Heat Map** tab.
 
 Finally, a **Calendar** table connects to the **Picking Reports** table using the date each article was picked, allowing picking data to be filtered and analyzed across any specific range of dates.
 
@@ -139,7 +139,7 @@ The resulting table serves as the main article-level table in the data model and
 
 ### Location Classification Type
 
-For the **Article Picking Analysis** page, I wanted users to be able to filter articles stored either in floor or shelf locations. Since there is no column in any of the source data that directly identifies this attribute, I created a `Location Type` measure to assign a location type to each article.
+For the **Article Picking Analysis** page, I wanted users to be able to filter articles stored either in floor or shelf locations. Since there is no column in any of the source data that directly identifies this attribute, I created a `Location Type` calculated column to assign a location type to each article.
 
 ```DAX
 Location Type = 
@@ -152,7 +152,7 @@ IF(
 
 Our warehouse locations use a six-digit numerical `SLID`, where the final two digits represent a storage level. A level of `00` represents a floor location, while all other values represent a shelf location.
 
-`FORMAT` ensures the `SLID` contains six digits, while `RIGHT` extracts the final two characters. The `IF` statements then classifies each article as either **Floor** or **Shelf**.
+`FORMAT` ensures the `SLID` contains six digits, while `RIGHT` extracts the final two characters. The `IF` statement then classifies each article as either **Floor** or **Shelf**.
 
 ### Pallet Size Classification
 
@@ -175,9 +175,9 @@ SWITCH(
 )
 ```
 
-`LOOKUPVALUE` matches the current article to its dimensions listed in the corresponding report, while the `PalletLength` variable stores the retrieved value to be used in the formula. This variable is then evaulated in the `RETURN`.
+`LOOKUPVALUE` matches the current article to its dimensions listed in the corresponding report, while the `PalletLength` variable stores the retrieved value to be used in the formula. This variable is then evaluated in the `RETURN` expression to return the appropriate size classification.
 
-Any article longer than 145cm would need to be classified as an **IKEA** length pallet, while anything below this would be a **EURO** pallet. Any article without dimensional data would return a blank.
+Any article longer than 145cm would need to be classified as an **IKEA** length pallet, while anything at or below 145cm is classified as a **EURO** pallet. Any article without dimensional data would return a blank.
 
 This provides additional information when we are planning, as we need to take into account more than just an article's demand when bin planning.
 
@@ -199,7 +199,7 @@ This Calendar table is related to the **Picking Reports** table and allows the d
 
 ### Picking Activity Measures
 
-There are two primary measures used throughout the dashboard to calculate the total amount of orders an article was found on, as well as the total amount that each article was sold. These two measures are **Pick Count** and **Picked QTY Total**.
+There are two measures used throughout the dashboard to evaluate article demand by retrieving historical picking data. These two measures are **Pick Count** and **Picked QTY Total**. Pick Count measures how frequently an article appears in the picking data, while Picked QTY Total measures the total quantity picked.
 
 ### Pick Count
 
@@ -211,7 +211,7 @@ COALESCE(
 )
 ```
 
-`COUNTROWS` counts the number of rows within the context of the current filter. Because Power BI automatically appies the filters from the selected article, location, date, and other selections, this measure can be used in multiple tabs of the dashboard.
+`COUNTROWS` counts the number of rows within the context of the current filter. Because Power BI automatically applies the filters from the selected article, location, date, and other selections, this measure can be used in multiple tabs of the dashboard.
 
 `COALESCE` converts blank results to 0, which is important when identifying articles that haven't experienced any picking activity during the selected period.
 
@@ -225,8 +225,6 @@ COALESCE(
 )
 ```
 
-While **Pick Count** measures how frequently an article was found on an order, **Picked QTY Total** calculates the total amount sold.
-
 Using both measures together provides a bigger picture when evaluating article demand, as one article might generate many picks for small quantities, or fewer picks for larger quantities. 
 
 ## Skills Demonstrated
@@ -237,7 +235,7 @@ Using both measures together provides a bigger picture when evaluating article d
 - Relational data modeling and dimension tables
 - DAX calculated tables, calculated columns, and measures
 - Dynamic calendar/date modeling
-- Warehouse location division and classification
+- Warehouse location parsing and classification
 - Conditional formatting and heat-map visualization
 - Report-page tooltips and cross-filtering
 - Operational data analysis and warehouse slotting
