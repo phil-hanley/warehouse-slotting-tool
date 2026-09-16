@@ -93,3 +93,95 @@ The **SM2 Articles** table serves as the primary article-level table in the mode
 The **Full Serve Locations** table contains one row for each warehouse location and connects to both **Sales Space Optimization** and **Picking Reports** through the `SLID` field, allowing updated warehouse location information to be compared with the picking data to provide the aisle and bin numbers used to build the **Picking Heat Map** tab.
 
 Finally, a **Calendar** table connects to the **Picking Reports** table using the date each article was picked, allowing picking data to be filtered and analyzed across any specific range of dates.
+
+## DAX & Analytical Layer
+
+After cleaning and modeling the source data, I used DAX to create calculated tables, calculated columns, and measures needed for the dashboard. These calculations transform the raw data into article-level information that is used throughout the dashboard.
+
+### SM2 Articles Calculated Table
+
+The **SM2 Articles** table seen in the relationship model is a table I created to have one summarized record for each article stored in our warehouse. The source **Sales Optimization** report can contain multiple rows for the same article when it is stored in multiple locations, so I used `SUMMARIZE` to create this article-level table.
+
+```DAX
+SM2 Articles = 
+SUMMARIZE(
+    FILTER(
+        'Sales Space Optimization',
+        NOT(ISBLANK('Sales Space Optimization'[ArticleNo]))
+    ),
+    'Sales Space Optimization'[ArticleNo],
+
+    "SLID",
+        CONCATENATEX(
+            VALUES('Sales Space Optimization'[SLID]),
+            'Sales Space Optimization'[SLID],
+            ", ",
+            'Sales Space Optimization'[SLID],
+            ASC
+        ),
+
+    "Article Name",
+        MIN('Sales Space Optimization'[ARTNAME_UNICODE]),
+
+    "Product Division",
+        MIN('Sales Space Optimization'[Product Division]),
+
+    "Product Area",
+        MIN('Sales Space Optimization'[Product Area])
+)
+```
+
+`FILTER` removes records without a valid article number. `SUMMARIZE` then groups the remaining data by article number and `CONCATENATEX` combines all of the article's assigned locations (if there is more than one) into a single value that separates each location with commas.
+
+`MIN` is used for identifiers such as **Article Name,** **Product Division,** and **Product Area** to return a single value for each summarized article.
+
+The resulting table serves as the main article-level table in the data model and is used throughout the dashboard for analysis and filtering at the article level.
+
+### Location Classification Type
+
+For the **Article Picking Analysis** page, I wanted users to be able to filter articles stored either in floor or shelf locations. Since there is no column in any of the source data that directly identifies this attribute, I created a `Location Type` measure to assign a location type to each article.
+
+```DAX
+Location Type = 
+IF(
+    RIGHT(FORMAT('SM2 Articles'[SLID], "000000"), 2) = "00",
+    "Floor",
+    "Shelf"
+)
+```
+
+Our warehouse locations use a six-digit numerical `SLID`, where the final two digits represent a storage level. A level of `00` represents a floor location, while all other values represent a shelf location.
+
+`FORMAT` ensures the `SLID` contains six digits, while `RIGHT` extracts the final two characters. The `IF` statements then classifies each article as either **Floor** or **Shelf**.
+
+### Pallet Size Classification
+
+Physical product dimensions are also important when we are evaluating our current warehouse layout for potential article swaps. Some pallets require longer warehouse locations, which are far more scarce in our current layout. I created a calculated column that looks up the gross pallet length for each article from the **Article Dimensions** table.
+
+```DAX
+Pallet Size = 
+VAR PalletLength =
+    LOOKUPVALUE(
+        'Article Dimensions'[UL_LENGTH_GROSS_CM],
+        'Article Dimensions'[ARTNO_fixed],
+        'SM2 Articles'[ArticleNo]
+    )
+RETURN
+SWITCH(
+    TRUE(),
+    ISBLANK(PalletLength), BLANK(),
+    PalletLength > 145, "IKEA",
+    "EURO"
+)
+```
+
+`LOOKUPVALUE` matches the current article to its dimensions listed in the corresponding report, while the `PalletLength` variable stores the retrieved value to be used in the formula. This variable is then evaulated in the `RETURN`.
+
+Any article longer than 145cm would need to be classified as an **IKEA** length pallet, while anything below this would be a **EURO** pallet. Any article without dimensional data would return a blank.
+
+This provides additional info when we are planning, as we need to take into account more than just an article's demand when bin planning.
+
+
+
+
+
