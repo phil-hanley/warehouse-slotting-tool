@@ -227,7 +227,20 @@ COALESCE(
 
 While **Pick Count** measures how frequently an article was found on an order, **Picked QTY Total** calculates the total amount sold.
 
-Using both measures together provides a bigger picture when evaluating article demand, as one article might generate many picks for small quantities, or fewer picks for larger quantites. 
+Using both measures together provides a bigger picture when evaluating article demand, as one article might generate many picks for small quantities, or fewer picks for larger quantities. 
+
+## Skills Demonstrated
+
+- Power BI dashboard development and interactive report design
+- Power Query data cleaning and transformation
+- Data ingestion and duplicate removal
+- Relational data modeling and dimension tables
+- DAX calculated tables, calculated columns, and measures
+- Dynamic calendar/date modeling
+- Warehouse location division and classification
+- Conditional formatting and heat-map visualization
+- Report-page tooltips and cross-filtering
+- Operational data analysis and warehouse slotting
 
 
 
