@@ -61,7 +61,7 @@ The three reports mentioned above are briefly described below. For confidentiali
 
 Before building the data model, I used Power Query to clean up and standardize the source data. Just as I did in the **warehouse-location-optimization** repository, I needed to ensure consistent formatting for article numbers and location IDs (`SLID`'s).
 
-Our article numbers use eight-digit numerical identifiers. Some of my source reports omitted leading zeros for this identifier, so I used `Text.PadStart` to fix this.
+Our article numbers use eight-digit numerical identifiers. Some of my source reports omitted leading zeros from these identifiers, so I used `Text.PadStart` to fix this.
 
 ```DAX
 = Table.AddColumn(Table1_Table, "ARTNO_fixed", each Text.PadStart(Text.From([ARTNO]), 8, "0"))
@@ -73,7 +73,7 @@ Then, because of how the **Picking Reports** data is retrieved, the report can s
 = Table.Distinct(#"Changed Type", {"Order No", "Order Type", "Article No", "Pick Area", "User Picking"})
 ```
 
-Our warehouse `SLID` values contain six digits representing the aisle, bin, and level of each location. I separated these values into individual columns so warehouse locations could be analyzed within the **Picking Heat Map**.
+Our warehouse `SLID` values contain six digits representing the aisle, bin, and level of each location. The first two digits represent the aisle, the middle two represent the bin, and the last two represent the level. I separated these values into individual columns so warehouse locations could be analyzed within the **Picking Heat Map**.
 
 ```DAX
 Aisle = Text.Start(Text.From([SLID]), 2)
