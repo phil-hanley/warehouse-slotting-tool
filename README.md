@@ -179,9 +179,55 @@ SWITCH(
 
 Any article longer than 145cm would need to be classified as an **IKEA** length pallet, while anything below this would be a **EURO** pallet. Any article without dimensional data would return a blank.
 
-This provides additional info when we are planning, as we need to take into account more than just an article's demand when bin planning.
+This provides additional information when we are planning, as we need to take into account more than just an article's demand when bin planning.
 
+### Dynamic Calendar Table
 
+To analyze picking activity over time, I created a dedicated Calendar table based on all dates available in the **Picking Reports** table.
+
+```DAX
+Calendar = 
+CALENDAR(
+    MIN('Picking Reports'[Date Orderline Picked]),
+    MAX('Picking Reports'[Date Orderline Picked])
+)
+```
+
+`MIN` and `MAX` identify the earliest and latest dates in the **Picking Report** data, while `CALENDAR` generates a table of dates covering that entire period.
+
+This Calendar table is related to the **Picking Reports** table and allows the dashboard to filter picking activity by a date or range of dates and also analyze PALLET picking activity week-over-week.
+
+### Picking Activity Measures
+
+There are two primary measures used throughout the dashboard to calculate the total amount of orders an article was found on, as well as the total amount that each article was sold. These two measures are **Pick Count** and **Picked QTY Total**.
+
+### Pick Count
+
+```DAX
+Pick Count = 
+COALESCE(
+    COUNTROWS('Picking Reports'),
+    0
+)
+```
+
+`COUNTROWS` counts the number of rows within the context of the current filter. Because Power BI automatically appies the filters from the selected article, location, date, and other selections, this measure can be used in multiple tabs of the dashboard.
+
+`COALESCE` converts blank results to 0, which is important when identifying articles that haven't experienced any picking activity during the selected period.
+
+### Picked Qty Total
+
+```DAX
+Picked QTY Total = 
+COALESCE(
+    SUM('Picking Reports'[Picked Qty]),
+    0
+)
+```
+
+While **Pick Count** measures how frequently an article was found on an order, **Picked QTY Total** calculates the total amount sold.
+
+Using both measures together provides a bigger picture when evaluating article demand, as one article might generate many picks for small quantities, or fewer picks for larger quantites. 
 
 
 
